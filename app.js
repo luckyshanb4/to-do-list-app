@@ -179,6 +179,6 @@ app.get("/about",function(req,res){
 })
 
 
-app.listen(Process.env.PORT,function(){
-    console.log("Server started on port 3000 successfully");
-})
+app.listen(process.env.PORT || 3000, function() {
+    console.log("Server started on port 3000");
+  });
