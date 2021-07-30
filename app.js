@@ -1,6 +1,6 @@
 const express=require("express");
 const bodyParser=require("body-parser");
-const date=require(__dirname+"/date.js");
+// const date=require(__dirname+"/date.js");
 const mongoose=require('mongoose');
 
 const app=express();
@@ -16,6 +16,14 @@ const itemSchema=new mongoose.Schema({
 });
 
 const Item = mongoose.model("Item",itemSchema);
+
+const listSchema = {
+    name: String,
+    items: [itemSchema]
+}
+
+const List=mongoose.model("List",listSchema);
+
 
 const item1=new Item({
     name:"Welcome to To Do List"
@@ -33,11 +41,9 @@ const defaultItems=[item1,item2,item3];
 
 
 
-
-
 app.get("/",function(req,res){
 
-    let day=date.getDay();
+    // let day=date.getDay();
     Item.find(function(err,items){
 
         if(items.length===0){
@@ -55,7 +61,7 @@ app.get("/",function(req,res){
             console.log(err);
         }
         else{
-            res.render('list',{listTitle:day,newListItem:items});
+            res.render('list',{listTitle:"Today",newListItem:items});
         }
 
     })
@@ -83,20 +89,65 @@ app.post("/delete",function(req,res){
 
 app.post("/",function(req,res){
     let itemName =req.body.newItem;
+    let listName=req.body.list;
 
     // create new item document
     const newItem=new Item({
         name:itemName
     });
-    
-    newItem.save();
 
-    res.redirect("/");
+    if(listName==="Today"){
+        newItem.save();
+        res.redirect("/");
+    }
+    else{
+        List.findOne({name:listName},function(err,foundList){
+            if(err){
+                console.log(err);
+            }
+            else{
+                foundList.items.push(newItem);
+                // console.log(foundList.items);
+                foundList.save();
+                res.redirect("/"+listName);
+            }
+            
+        })
+    }
+    
 
 })
 
-app.get("/work",function(req,res){
-    // res.render("list",{listTitle:"Work List",newListItem:workItems})
+//dynamic route
+app.get("/:customListName",function(req,res){
+    const customListName = req.params.customListName;
+  
+
+    List.findOne({name:customListName},function(err,result){
+        if(err){
+            console.log(err);
+        }
+        else{
+            if(!result){
+                
+                //create new list
+                const list=new List({
+                    name:customListName,
+                    items: defaultItems
+                });
+            
+                list.save();
+
+                res.redirect("/"+customListName)
+            }
+            else{
+                //show existing list
+                res.render('list',{listTitle:customListName,newListItem:result.items});
+            }
+        }
+    })
+
+    
 
 })
 
