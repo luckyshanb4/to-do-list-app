@@ -1,5 +1,6 @@
 const express=require("express");
 const bodyParser=require("body-parser");
+const lodash=require("lodash");
 // const date=require(__dirname+"/date.js");
 const mongoose=require('mongoose');
 
@@ -72,17 +73,38 @@ app.get("/",function(req,res){
 
 app.post("/delete",function(req,res){
     const checkedItemId=req.body.checkBox;
+    const listName=req.body.listName;
     
-    Item.findByIdAndRemove(checkedItemId,function(err){
-        if(err){
-            console.log(err);
-        }
-        else{
-            console.log("deleted successfully");
-        }
-    } )
+    
 
-    res.redirect("/");
+
+    if(listName==="Today"){
+        Item.findByIdAndRemove(checkedItemId,function(err){
+            if(err){
+                console.log(err);
+            }
+            else{
+                console.log("deleted successfully");
+            }
+        } )
+
+        res.redirect("/");
+    }
+    else{
+        List.findOneAndUpdate(
+            {name:listName},
+            {$pull:{items:{_id:checkedItemId}}},
+            function(err,foundList){
+                if(!err){
+                    res.redirect("/"+listName);
+                }
+            }
+
+        )
+        
+    }
+
+   
 
 })
 
@@ -120,7 +142,7 @@ app.post("/",function(req,res){
 
 //dynamic route
 app.get("/:customListName",function(req,res){
-    const customListName = req.params.customListName;
+    const customListName = lodash.capitalize(req.params.customListName);
   
 
     List.findOne({name:customListName},function(err,result){
